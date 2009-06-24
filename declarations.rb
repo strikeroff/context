@@ -25,4 +25,3 @@ class Controller
 	
 	wrappable :service, '/system/services/logic-service'
 end
-

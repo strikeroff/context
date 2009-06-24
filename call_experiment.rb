@@ -1,7 +1,7 @@
 require "requires.rb"
 
 controller = Controller.new
-controller.logic
+controller.logic # must be 4
 
 wrap '/system/services/logic-service' => CustomService.new do
 	controller.logic # must be 96
