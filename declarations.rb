@@ -1,10 +1,3 @@
-require "rubygems"
-
-gem "activesupport"
-require "activesupport"
-
-require "implementation.rb"
-
 class GeneralService
 	def calculate(input)
 		input * input
@@ -33,14 +26,3 @@ class Controller
 	wrappable :service, '/system/services/logic-service'
 end
 
-controller = Controller.new
-
-controller.logic
-
-wrap '/system/services/logic-service' =>  CustomService.new do
-	controller.logic
-	wrap '/system/services/logic-service' =>  CustomService.new(999) do
-		controller.logic
-	end
-	controller.logic
-end
