@@ -2,14 +2,10 @@ module OrderedSubscribersExperiment
   include ::MPT
   
   experiment "Ordered filter chain with event object" do
-    input_object = { :content => "One one white rabbit that can do anything in one white summer" }
+    input_object = { :content => "This scintillating new production of Shakespeare’s romantic comedy is one of the most accomplished Shakespeare in the Park productions in some time." }
     
-    Event.subscribe '/filters/count-words', :as => :result_word_uppercaser, :after => :word_counter do
-      cnts = event_object[:counts]
-      cnts.each do |word, count|
-        cnts.delete word
-        cnts[word.upcase] = count
-      end
+    Event.subscribe '/filters/count-words', :as => :remove_unimportant_characters do
+      event_object[:content].gsub!( /[\!\.\,\?\:\=\-]|(’s)/, '' )
     end
     
     Event.subscribe '/filters/count-words' do
@@ -27,7 +23,7 @@ module OrderedSubscribersExperiment
       event_object[:counts] = word_counts
     end
     
-    Event.subscribe '/filters/count-words', :as => :normalizer do
+    Event.subscribe '/filters/count-words', :as => :normalizer, :after => :remove_unimportant_characters do
       event_object[:content].downcase!
     end
     
