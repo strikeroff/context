@@ -37,13 +37,78 @@ module MPT
     end # def reorganize
   end # filter chain class
 
+  class Event
+    @@mpt_subscribers = {}
+    
+    class << self
+      def subscribe(event_name, options = {}, &block)
+        channel = @@mpt_subscribers[event_name] ||= MPT::FilterChain.new
+        channel << { :options => options, :proc => block }
+        channel.reorganize
+      end
+
+      def trigger_with_object(event_name, object, *args)
+        container = MPT::EventContainer.new(object)
+        channel = @@mpt_subscribers[event_name]
+        if channel.size > 0
+
+          mod = Module.new
+          container.extend mod
+
+          channel.each do |subscriber|
+            mod.send :define_method, :handler, subscriber[:proc]
+            container.handler *args
+          end
+        end
+
+        container.event_object
+      end
+
+      def trigger(event_name, *args)
+        trigger_with_object(event_name, nil, *args)
+      end
+    end # end of static section
+  end # end of class Event
+  
+  class Wrap
+    @@wrap_variables = {}
+    class << self
+      def it(var ={}, &block)
+        thread_id = Thread.current.object_id
+        @@wrap_variables[thread_id]||={}
+        temp = @@wrap_variables[thread_id].dup
+        @@wrap_variables[thread_id].merge!(var)
+        yield
+        @@wrap_variables[thread_id] = temp
+      end
+
+      def get(wrap_name, default = nil)
+        temp = @@wrap_variables[Thread.current.object_id]
+        res = nil
+
+
+        if !temp.blank?
+          res = temp[wrap_name] unless temp[wrap_name].blank?
+        end
+
+        if res.nil? && !default.nil?
+          res = default
+          if default.instance_of?( Proc )
+            res = default.call 
+          end
+        end
+
+        res
+      end
+    end
+  end
 end
 
 class Class
 	def wrappable(accessor_name, wrap_name)
 		code = <<-EOS
 		  def #{accessor_name.to_s}_with_wrap_support
-        wrap_get("#{wrap_name}", Proc.new { self.send :"#{accessor_name.to_s}_without_wrap_support" })
+        MPT::Wrap.get("#{wrap_name}", Proc.new { self.send :"#{accessor_name.to_s}_without_wrap_support" })
 		  end
 
 		  alias_method_chain :#{accessor_name.to_s}, :wrap_support
@@ -54,36 +119,7 @@ class Class
 end
 
 module Kernel  
-  @@wrap_variables = {}
-  @@mpt_subscribers = {}
-	
-  def subscribe(event_name, options = {}, &block)
-    channel = @@mpt_subscribers[event_name] ||= MPT::FilterChain.new
-    channel << { :options => options, :proc => block }
-    channel.reorganize
-  end
-
-  def event_with_object(event_name, object, *args)
-    container = MPT::EventContainer.new(object)
-    channel = @@mpt_subscribers[event_name]
-    if channel.size > 0
-
-      mod = Module.new
-      container.extend mod
-
-      channel.each do |subscriber|
-        mod.send :define_method, :handler, subscriber[:proc]
-        container.handler *args
-      end
-    end
-
-    container.event_object
-  end
-
-  def event(event_name, *args)
-    event_with_object(event_name, nil, *args)
-  end
-
+  
   def experiment(title)
     en = @@experiment_number ||= 1
     puts "Experiment ##{en}. #{title}\n\n"
@@ -93,33 +129,6 @@ module Kernel
     puts "\nExperiment ##{en} FINISHED!\n\n\n\n"
     @@experiment_number += 1
   end
-
-  def wrap(var ={}, &block)
-    thread_id = Thread.current.object_id
-    @@wrap_variables[thread_id]||={}
-    temp = @@wrap_variables[thread_id].dup
-    @@wrap_variables[thread_id].merge!(var)
-    yield
-    @@wrap_variables[thread_id] = temp
-  end
-
-  def wrap_get(wrap_name, default = nil)
-    temp = @@wrap_variables[Thread.current.object_id]
-    res = nil
-
-
-    if !temp.blank?
-      res = temp[wrap_name] unless temp[wrap_name].blank?
-    end
-
-    if res.nil? && !default.nil?
-      res = default
-      if default.instance_of?( Proc )
-        res = default.call 
-      end
-    end
-
-    res
-  end
+  
 end
 
