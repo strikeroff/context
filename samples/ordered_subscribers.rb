@@ -2,10 +2,10 @@ module OrderedSubscribersExperiment
   include ::MPT
   
   experiment "Ordered filter chain with event object" do
-    input_object = { :content => "This scintillating new production of Shakespeare’s romantic comedy is one of the most accomplished Shakespeare in the Park productions in some time." }
+    input_object = { :content => "This scintillating new production of Shakespeare's romantic comedy is one of the most accomplished Shakespeare in the Park productions in some time." }
     
     Event.subscribe '/filters/count-words', :as => :remove_unimportant_characters do
-      event_object[:content].gsub!( /[\!\.\,\?\:\=\-]|(’s)/, '' )
+      event_object[:content].gsub!( /[\!\.\,\?\:\=\-]|('s)/, '' )
     end
     
     Event.subscribe '/filters/count-words' do
