@@ -117,18 +117,3 @@ class Class
 		class_eval(code, __FILE__, __LINE__)
 	end
 end
-
-module Kernel  
-  
-  def experiment(title)
-    en = @@experiment_number ||= 1
-    puts "Experiment ##{en}. #{title}\n\n"
-
-    yield
-
-    puts "\nExperiment ##{en} FINISHED!\n\n\n\n"
-    @@experiment_number += 1
-  end
-  
-end
-

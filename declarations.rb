@@ -1,3 +1,17 @@
+module Kernel  
+  
+  def experiment(title)
+    en = @@experiment_number ||= 1
+    puts "Experiment ##{en}. #{title}\n\n"
+
+    yield
+
+    puts "\nExperiment ##{en} FINISHED!\n\n\n\n"
+    @@experiment_number += 1
+  end
+  
+end
+
 class GeneralService
 	def calculate(input)
 		input * input
